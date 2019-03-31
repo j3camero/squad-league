@@ -11,11 +11,17 @@ def GenerateOneRandomGameOutcome(a, b):
 
 # Generate a list of game outcomes, in the form [(winner_id, loser_id), ...]
 def GenerateRandomGameOutcomes(skill_levels, n):
+    player_ids = range(len(skill_levels))
     outcomes = []
     for i in range(n):
-        j, k = random.sample(range(len(skill_levels)), 2)
+        j, k = random.sample(player_ids, 2)
         if GenerateOneRandomGameOutcome(skill_levels[j], skill_levels[k]):
             outcomes.append((j, k))
         else:
             outcomes.append((k, j))
     return outcomes
+
+# Returns a new vector whose items sum to 1.
+def Normalize(skill_levels):
+    divisor = sum(skill_levels)
+    return [float(p) / divisor for p in skill_levels]
