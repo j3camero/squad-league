@@ -38,9 +38,16 @@ def OneIteration(p, w):
         numer = 0
         denom = 0
         for j in range(len(p)):
+            if i == j:
+                continue
+            if p[i] + p[j] == 0:
+                continue
             numer += w[i][j]
             denom += (w[i][j] + w[j][i]) / (p[i] + p[j])
-        new_p.append(float(numer) / denom)
+        if denom > 0:
+            new_p.append(float(numer) / denom)
+        else:
+            new_p.append(0)
     return Normalize(new_p)
 
 # Estimate the skill rating of each player given a list of (winner, loser)
@@ -64,7 +71,7 @@ def EstimateSkillRatingsFromGameOutcomes(
         player_names = ['p' + str(i) for i in range(n)]
         csv_writer.writerow(['iteration', 'max_diff'] + player_names)
         csv_writer.writerow([0, 1] + p)
-    stop_threshold = 0.0000000001
+    stop_threshold = 0.0001
     i = 0
     while True:
         i += 1

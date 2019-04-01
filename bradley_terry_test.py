@@ -39,9 +39,9 @@ class TestStringMethods(unittest.TestCase):
 
     def test_normalize(self):
         p = bradley_terry.Normalize([1, 1, 2])
-        self.assertAlmostEqual(p[0], 0.25)
-        self.assertAlmostEqual(p[1], 0.25)
-        self.assertAlmostEqual(p[2], 0.5)
+        self.assertAlmostEqual(p[0], 0.25, 3)
+        self.assertAlmostEqual(p[1], 0.25, 3)
+        self.assertAlmostEqual(p[2], 0.5, 3)
 
     def test_solve_two_players(self):
         trials = 1000
@@ -50,6 +50,83 @@ class TestStringMethods(unittest.TestCase):
         p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
         self.assertLess(p[0], 0.5)
         self.assertGreater(p[1], 0.5)
+
+    def test_solve_three_players(self):
+        trials = 1000
+        outcomes = bradley_terry.GenerateRandomGameOutcomes([1, 2, 3], trials)
+        report = 'bradley-terry-solve-three-players.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        # Test that the skill ratings come out in the right order.
+        self.assertGreater(p[0], 0)
+        self.assertGreater(p[1], p[0])
+        self.assertGreater(p[2], p[1])
+        self.assertLess(p[2], 1)
+
+    def test_solve_ten_players(self):
+        trials = 1000
+        skills = [(i + 1) for i in range(10)]
+        outcomes = bradley_terry.GenerateRandomGameOutcomes(skills, trials)
+        report = 'bradley-terry-solve-ten-players.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertGreater(p[0], 0)
+        self.assertLess(p[9], 1)
+        # Top players should at least be ahead of the player ranked 5 behind.
+        for i in range(5, 10):
+            self.assertGreater(p[i], p[i - 5])
+
+    def test_solve_hundred_players_dense(self):
+        trials = 10 * 1000
+        skills = [(i + 1) for i in range(100)]
+        outcomes = bradley_terry.GenerateRandomGameOutcomes(skills, trials)
+        report = 'bradley-terry-solve-hundred-players-dense.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertGreaterEqual(p[0], 0)
+        self.assertLessEqual(p[99], 1)
+        self.assertLess(sum(p[:50]), sum(p[50:]))
+
+    def test_solve_hundred_players_sparse(self):
+        trials = 500
+        skills = [(i + 1) for i in range(100)]
+        outcomes = bradley_terry.GenerateRandomGameOutcomes(skills, trials)
+        report = 'bradley-terry-solve-hundred-players-sparse.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertGreaterEqual(p[0], 0)
+        self.assertLessEqual(p[99], 1)
+        self.assertLess(sum(p[:50]), sum(p[50:]))
+
+    def test_solve_one_game(self):
+        outcomes = [(1, 0)]
+        report = 'bradley-terry-solve-one-game.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertLess(p[0], 0.5)
+        self.assertGreater(p[1], 0.5)
+
+    def test_solve_two_players_cycle(self):
+        outcomes = [(1, 0), (0, 1)]
+        report = 'bradley-terry-solve-two-players-cycle.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertAlmostEqual(p[0], 0.5, 3)
+        self.assertAlmostEqual(p[1], 0.5, 3)
+
+    def test_solve_three_players_cycle(self):
+        outcomes = [(0, 1), (1, 2), (2, 0)]
+        report = 'bradley-terry-solve-three-players-cycle.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        one_third = float(1) / 3
+        self.assertAlmostEqual(p[0], one_third, 3)
+        self.assertAlmostEqual(p[1], one_third, 3)
+        self.assertAlmostEqual(p[2], one_third, 3)
+
+    def test_solve_four_players(self):
+        # Players 0, 1, and 2 are in a cycle, and 0 beats 3.
+        outcomes = [(0, 1), (1, 2), (2, 0), (0, 3)]
+        report = 'bradley-terry-solve-four-players.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        one_third = float(1) / 3
+        self.assertAlmostEqual(p[0], one_third, 3)
+        self.assertAlmostEqual(p[1], one_third, 3)
+        self.assertAlmostEqual(p[2], one_third, 3)
+        self.assertAlmostEqual(p[3], 0, 3)
 
 if __name__ == '__main__':
     unittest.main()
