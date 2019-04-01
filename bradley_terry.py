@@ -1,3 +1,4 @@
+import csv
 import random
 
 # The classic Bradley-Terry model.
@@ -25,3 +26,55 @@ def GenerateRandomGameOutcomes(skill_levels, n):
 def Normalize(skill_levels):
     divisor = sum(skill_levels)
     return [float(p) / divisor for p in skill_levels]
+
+# Does one iteration of the algorithm to solve the Bradley Terry model.
+# p is any vector of numbers all between 0 and 1. w is a the win matrix such
+# that w[i][j] is the number of times that i beat j. The return value is a
+# estimate of the skill values for each player. Calling this function
+# iteratively solves the Bradley Terry model.
+def OneIteration(p, w):
+    new_p = []
+    for i in range(len(p)):
+        numer = 0
+        denom = 0
+        for j in range(len(p)):
+            numer += w[i][j]
+            denom += (w[i][j] + w[j][i]) / (p[i] + p[j])
+        new_p.append(float(numer) / denom)
+    return Normalize(new_p)
+
+# Estimate the skill rating of each player given a list of (winner, loser)
+# pairs. Works by iteratively calling OneIteration(p, w).
+#   outcomes - a list of game outcomes in the form [(winner, loser), ...]
+#   convergence_report_filename_csv - (optional) write a report in CSV format.
+# Returns a list of the estimated skill rating for each player.
+def EstimateSkillRatingsFromGameOutcomes(
+        outcomes,
+        convergence_report_filename_csv=None):
+    n = max(max(winner, loser) for winner, loser in outcomes) + 1
+    w = [[0 for j in range(n)] for i in range(n)]
+    for winner, loser in outcomes:
+        w[winner][loser] += 1
+    report = None
+    csv_writer = None
+    p = Normalize([random.random() for i in range(n)])
+    if convergence_report_filename_csv:
+        report = open(convergence_report_filename_csv, 'wb')
+        csv_writer = csv.writer(report)
+        player_names = ['p' + str(i) for i in range(n)]
+        csv_writer.writerow(['iteration', 'max_diff'] + player_names)
+        csv_writer.writerow([0, 1] + p)
+    stop_threshold = 0.0000000001
+    i = 0
+    while True:
+        i += 1
+        old_p = p
+        p = OneIteration(p, w)
+        max_diff = max(abs(a - b) for a, b in zip(p, old_p))
+        if report:
+            csv_writer.writerow([i, max_diff] + p)
+        if max_diff < stop_threshold:
+            break
+    if report:
+        report.close()
+    return p

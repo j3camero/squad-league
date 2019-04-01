@@ -43,5 +43,13 @@ class TestStringMethods(unittest.TestCase):
         self.assertAlmostEqual(p[1], 0.25)
         self.assertAlmostEqual(p[2], 0.5)
 
+    def test_solve_two_players(self):
+        trials = 1000
+        outcomes = bradley_terry.GenerateRandomGameOutcomes([1, 2], trials)
+        report = 'bradley-terry-solve-two-players.csv'
+        p = bradley_terry.EstimateSkillRatingsFromGameOutcomes(outcomes, report)
+        self.assertLess(p[0], 0.5)
+        self.assertGreater(p[1], 0.5)
+
 if __name__ == '__main__':
     unittest.main()
